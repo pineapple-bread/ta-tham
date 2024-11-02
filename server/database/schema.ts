@@ -3,85 +3,93 @@ import {
   sqliteTable,
   text,
   integer,
-  uniqueIndex,
   primaryKey,
   AnySQLiteColumn,
+  unique,
 } from "drizzle-orm/sqlite-core";
-
-const privilegeList: [string, ...string[]] = [
-  "admin.all",
-  "user.create",
-  "user.read",
-  "user.update",
-  "user.delete",
-  "category.read",
-  "category.write",
-  "category.update",
-  "category.delete",
-  "product.create",
-  "product.read",
-  "product.update",
-  "product.delete",
-  "stock.update",
-  "order.create",
-  "order.read",
-  "order.update",
-  "order.delete",
-];
 
 // user
 export const user = sqliteTable("user", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   email: text().notNull().unique(),
   username: text().notNull().unique(),
   first_name: text().notNull(),
   last_name: text().notNull(),
+  is_email_verified: integer({ mode: "boolean" }).default(false),
   password_retry_counter: integer().notNull().default(0),
   password_hash: text().notNull(),
 });
 
 // One user can have many roles and one roles can be assigned to multiple users
 export const userRole = sqliteTable("user_role", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   name: text().notNull().unique(),
 });
 
-export const userApiKey = sqliteTable("user_api_key", {
-  id: integer().primaryKey({ autoIncrement: true }),
-  user_id: integer()
-    .notNull()
-    .references(() => user.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    }),
-  name: text().notNull().unique(),
-  api_key: text().notNull().unique(),
-});
-
-// Only one can exist at a time user_role / user_api_key
-export const rolePrivilege = sqliteTable("role_privilege", {
-  id: integer().primaryKey({ autoIncrement: true }),
-  user_role_id: integer().references(() => userRole.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  user_api_key_id: integer().references(() => userApiKey.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  privilege: text({ enum: privilegeList }).notNull(),
-});
-
-export const userOnUserRole = sqliteTable(
-  "user_on_user_role",
+// users can create api_keys have the same name but 1 user can not create api_keys the same name
+// If some how the hacker is in the database. api_key leak should be the least of concern
+export const userApiKey = sqliteTable(
+  "user_api_key",
   {
-    user_id: integer()
+    id: text().primaryKey(),
+    user_id: text()
       .notNull()
       .references(() => user.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    user_role_id: integer()
+    name: text().notNull(),
+    api_key_hash: text().notNull().unique(),
+    usage_counter: integer().notNull().default(0),
+  },
+  (table) => ({ user_id_name: unique().on(table.user_id, table.name) }),
+);
+
+// Only one can exist at a time user_role / user_api_key
+export const rolePrivilege = sqliteTable("role_privilege", {
+  id: text().primaryKey(),
+  user_role_id: text().references(() => userRole.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
+  user_api_key_id: text().references(() => userApiKey.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
+  privilege: text({
+    enum: [
+      "admin.all",
+      "user.create",
+      "user.read",
+      "user.update",
+      "user.delete",
+      "category.read",
+      "category.write",
+      "category.update",
+      "category.delete",
+      "product.create",
+      "product.read",
+      "product.update",
+      "product.delete",
+      "stock.update",
+      "order.create",
+      "order.read",
+      "order.update",
+      "order.delete",
+    ],
+  }).notNull(),
+});
+
+export const userOnUserRole = sqliteTable(
+  "user_on_user_role",
+  {
+    user_id: text()
+      .notNull()
+      .references(() => user.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    user_role_id: text()
       .notNull()
       .references(() => userRole.id, {
         onDelete: "cascade",
@@ -97,7 +105,7 @@ export const userOnUserRole = sqliteTable(
 
 // customer message
 export const customerMessage = sqliteTable("customer_message", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   type: text({ enum: ["question", "support", "feedback", "other"] }).notNull(),
   first_name: text().notNull(),
   last_name: text().notNull(),
@@ -108,7 +116,7 @@ export const customerMessage = sqliteTable("customer_message", {
 
 // language has to be unique
 export const language = sqliteTable("language", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   name: text({ enum: ["en-US", "vi-VN"] })
     .notNull()
     .unique(),
@@ -116,33 +124,22 @@ export const language = sqliteTable("language", {
 
 // product
 // time is in UTC
-export const product = sqliteTable(
-  "product",
-  {
-    id: integer().primaryKey({ autoIncrement: true }),
-    code: text().notNull(),
-    slug: text().generatedAlwaysAs(
-      (): SQL => sql`${product.code}-${product.id}`,
-      { mode: "stored" },
-    ),
-    price: integer(),
-    status: text({ enum: ["draft", "published", "discontinued"] })
-      .notNull()
-      .default("draft"),
-    product_category_id: integer().references(() => productCategory.id),
-    created_at: integer({ mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => {
-    return { slug_idx: uniqueIndex("slug_idx").on(table.slug) };
-  },
-);
+export const product = sqliteTable("product", {
+  id: text().primaryKey(),
+  code: text().notNull(),
+  price: integer(),
+  status: text({ enum: ["draft", "published", "discontinued"] })
+    .notNull()
+    .default("draft"),
+  product_category_id: text().references(() => productCategory.id),
+  created_at: integer({ mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
 
 // Deleting productStock upon deleting product
 export const productStock = sqliteTable("product_stock", {
-  product_id: integer()
-    .notNull()
+  product_id: text()
     .references(() => product.id, { onDelete: "cascade", onUpdate: "cascade" })
     .primaryKey(),
   import_quantity: integer().notNull().default(0),
@@ -157,13 +154,13 @@ export const productStock = sqliteTable("product_stock", {
 export const productTranslation = sqliteTable(
   "product_translation",
   {
-    product_id: integer()
+    product_id: text()
       .notNull()
       .references(() => product.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    language_id: integer()
+    language_id: text()
       .notNull()
       .references(() => language.id, {
         onDelete: "cascade",
@@ -181,8 +178,10 @@ export const productTranslation = sqliteTable(
 
 // weak entity - product
 // display first image on display_order
+// Need id for easier fix
 export const productImage = sqliteTable("product_image", {
-  product_id: integer()
+  id: text().primaryKey(),
+  product_id: text()
     .notNull()
     .references(() => product.id, { onDelete: "cascade", onUpdate: "cascade" }),
   image_url: text().notNull(),
@@ -193,9 +192,9 @@ export const productImage = sqliteTable("product_image", {
 // need to be null for the first one -> only use with for max depth <= 3
 // if product_category_id == NULL -> it's the first item. Next item can't be liek that
 export const productCategory = sqliteTable("product_category", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   display_order: integer(),
-  product_category_id: integer().references(
+  product_category_id: text().references(
     (): AnySQLiteColumn => productCategory.id,
   ),
 });
@@ -203,13 +202,13 @@ export const productCategory = sqliteTable("product_category", {
 export const productCategoryTranslation = sqliteTable(
   "product_category_translation",
   {
-    product_category_id: integer()
+    product_category_id: text()
       .notNull()
       .references(() => productCategory.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    language_id: integer()
+    language_id: text()
       .notNull()
       .references(() => language.id, {
         onDelete: "cascade",
@@ -231,8 +230,8 @@ export const productCategoryTranslation = sqliteTable(
 export const productCategorySpecificationItem = sqliteTable(
   "product_category_specification_item",
   {
-    id: integer().primaryKey({ autoIncrement: true }),
-    product_category_id: integer()
+    id: text().primaryKey(),
+    product_category_id: text()
       .notNull()
       .references(() => productCategory.id, {
         onDelete: "cascade",
@@ -245,13 +244,13 @@ export const productCategorySpecificationItem = sqliteTable(
 export const productCategorySpecificationItemTranslation = sqliteTable(
   "product_category_specification_item_translation",
   {
-    product_category_specification_item_id: integer()
+    product_category_specification_item_id: text()
       .notNull()
       .references(() => productCategorySpecificationItem.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    language_id: integer()
+    language_id: text()
       .notNull()
       .references(() => language.id, {
         onDelete: "cascade",
@@ -275,14 +274,14 @@ export const productCategorySpecificationItemTranslation = sqliteTable(
 export const productSpecificationItem = sqliteTable(
   "product_specification_item",
   {
-    id: integer().primaryKey({ autoIncrement: true }),
-    product_id: integer()
+    id: text().primaryKey(),
+    product_id: text()
       .notNull()
       .references(() => product.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    product_category_specification_item_id: integer()
+    product_category_specification_item_id: text()
       .notNull()
       .references(() => productCategorySpecificationItem.id, {
         onDelete: "cascade",
@@ -294,13 +293,13 @@ export const productSpecificationItem = sqliteTable(
 export const productSpecificationItemTranslation = sqliteTable(
   "product_specification_item_translation",
   {
-    product_specification_item_id: integer()
+    product_specification_item_id: text()
       .notNull()
       .references(() => productSpecificationItem.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    language_id: integer()
+    language_id: text()
       .notNull()
       .references(() => language.id, {
         onDelete: "cascade",
@@ -321,12 +320,20 @@ export const productSpecificationItemTranslation = sqliteTable(
 
 // creating view to see grand_total
 export const order = sqliteTable("order", {
-  id: integer().primaryKey({ autoIncrement: true }),
+  id: text().primaryKey(),
   status: text({
-    enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+    enum: [
+      "pending",
+      "processing",
+      "paid",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ],
   })
     .notNull()
     .default("pending"),
+  is_stock_subtracted: integer({ mode: "boolean" }).notNull().default(false),
   discount_type: text({ enum: ["percentage", "fixed"] }).default("percentage"),
   discount_value: integer().default(0),
   total_discount: integer().generatedAlwaysAs(
@@ -342,13 +349,15 @@ export const order = sqliteTable("order", {
     .$onUpdate(() => sql`(unixepoch())`),
 });
 
-// only delete on order_id change. product_id can be null
-export const order_product_item = sqliteTable("order_product_item", {
-  id: integer().primaryKey({ autoIncrement: true }),
-  order_id: integer()
+// only delete on order_id change. product_id can not be null but don't get delete on product delete
+export const orderProductItem = sqliteTable("order_product_item", {
+  id: text().primaryKey(),
+  order_id: text()
     .notNull()
     .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  product_id: integer().references(() => product.id),
+  product_id: text()
+    .notNull()
+    .references(() => product.id),
   product_price: integer().notNull(),
   quantity: integer().notNull(),
   subtotal: integer().generatedAlwaysAs(sql`product_price * quantity`, {
@@ -356,11 +365,10 @@ export const order_product_item = sqliteTable("order_product_item", {
   }),
 });
 
-export const order_billing_information = sqliteTable(
+export const orderBillingInformation = sqliteTable(
   "order_billing_information",
   {
-    order_id: integer()
-      .notNull()
+    order_id: text()
       .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" })
       .primaryKey(),
     first_name: text().notNull(),
@@ -377,11 +385,10 @@ export const order_billing_information = sqliteTable(
   },
 );
 
-export const order_shipping_information = sqliteTable(
+export const orderShippingInformation = sqliteTable(
   "order_shipping_information",
   {
-    order_id: integer()
-      .notNull()
+    order_id: text()
       .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" })
       .primaryKey(),
     first_name: text().notNull(),
