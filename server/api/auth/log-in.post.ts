@@ -3,16 +3,15 @@ import { user, userRole, userOnUserRole } from "~/server/database/schema";
 
 const MIN_INPUT_LENGTH = 1;
 
-const insertUserSchema = createInsertSchema(user, {
+const signInSchema = createInsertSchema(user, {
   email: (schema) => schema.email.email(),
   password_hash: (schema) => schema.password_hash.min(MIN_INPUT_LENGTH),
-});
-
-// I won't change password_hash -> password (◕ω◕✿)
-const signInSchema = insertUserSchema.pick({
+}).pick({
   email: true,
   password_hash: true,
 });
+
+// I won't change password_hash -> password (◕ω◕✿)
 
 // Remember to put captcha!
 // Not putting email verified here yet!

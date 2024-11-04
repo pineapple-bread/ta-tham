@@ -5,7 +5,7 @@ CREATE TABLE `customer_message` (
 	`last_name` text NOT NULL,
 	`email` text NOT NULL,
 	`message` text NOT NULL,
-	`status` text
+	`status` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `language` (
@@ -21,6 +21,7 @@ CREATE TABLE `order` (
 	`discount_type` text DEFAULT 'percentage',
 	`discount_value` integer DEFAULT 0,
 	`total_discount` integer GENERATED ALWAYS AS (discount_type * discount_value) STORED,
+	`note` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
@@ -154,12 +155,10 @@ CREATE TABLE `product_translation` (
 );
 --> statement-breakpoint
 CREATE TABLE `role_privilege` (
-	`id` text PRIMARY KEY NOT NULL,
-	`user_role_id` text,
-	`user_api_key_id` text,
+	`user_role_id` text NOT NULL,
 	`privilege` text NOT NULL,
-	FOREIGN KEY (`user_role_id`) REFERENCES `user_role`(`id`) ON UPDATE cascade ON DELETE cascade,
-	FOREIGN KEY (`user_api_key_id`) REFERENCES `user_api_key`(`id`) ON UPDATE cascade ON DELETE cascade
+	PRIMARY KEY(`privilege`, `user_role_id`),
+	FOREIGN KEY (`user_role_id`) REFERENCES `user_role`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `user` (
@@ -168,24 +167,13 @@ CREATE TABLE `user` (
 	`username` text NOT NULL,
 	`first_name` text NOT NULL,
 	`last_name` text NOT NULL,
-	`is_email_verified` integer DEFAULT false,
+	`is_email_verified` integer DEFAULT false NOT NULL,
 	`password_retry_counter` integer DEFAULT 0 NOT NULL,
 	`password_hash` text NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
 CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
-CREATE TABLE `user_api_key` (
-	`id` text PRIMARY KEY NOT NULL,
-	`user_id` text NOT NULL,
-	`name` text NOT NULL,
-	`api_key_hash` text NOT NULL,
-	`usage_counter` integer DEFAULT 0 NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `user_api_key_api_key_hash_unique` ON `user_api_key` (`api_key_hash`);--> statement-breakpoint
-CREATE UNIQUE INDEX `user_api_key_user_id_name_unique` ON `user_api_key` (`user_id`,`name`);--> statement-breakpoint
 CREATE TABLE `user_on_user_role` (
 	`user_id` text NOT NULL,
 	`user_role_id` text NOT NULL,

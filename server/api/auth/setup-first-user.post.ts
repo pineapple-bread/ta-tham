@@ -17,15 +17,17 @@ const NAME_REGEX = /^[a-zA-Z]{1,}$/;
 const PASSWORD_REGEX =
   /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
-const insertUserSchema = createInsertSchema(user, {
+// Not validating these 2 because it's not the value input by user
+const USER_ROLE_NAME = "admin";
+const USER_PRIVILEGE = "admin.all";
+
+const signUpSchema = createInsertSchema(user, {
   email: (schema) => schema.email.email(),
   username: (schema) => schema.username.regex(USERNAME_REGEX),
   first_name: (schema) => schema.first_name.regex(NAME_REGEX),
   last_name: (schema) => schema.last_name.regex(NAME_REGEX),
   password_hash: (schema) => schema.password_hash.regex(PASSWORD_REGEX),
-});
-
-const signUpSchema = insertUserSchema.pick({
+}).pick({
   email: true,
   username: true,
   first_name: true,
@@ -53,18 +55,18 @@ export default defineEventHandler(async (event) => {
       });
     }
     const userRoleId = uuidv4();
-    const rolePrivilegeId = uuidv4();
     const userId = uuidv4();
     const passwordHash = await hashPassword(signUpInput.data.password_hash);
     // Admin must be the first user! (◕‸ ◕✿). Don't delete the admin otherwise you will make me sad! ╥﹏╥
     // Delete all userRole and rolePrivilege before proceeding.
     await useDrizzle().batch([
       useDrizzle().delete(userRole),
-      useDrizzle().insert(userRole).values({ id: userRoleId, name: "admin" }),
+      useDrizzle()
+        .insert(userRole)
+        .values({ id: userRoleId, name: USER_ROLE_NAME }),
       useDrizzle().insert(rolePrivilege).values({
-        id: rolePrivilegeId,
         user_role_id: userRoleId,
-        privilege: "admin.all",
+        privilege: USER_PRIVILEGE,
       }),
       useDrizzle().insert(user).values({
         id: userId,

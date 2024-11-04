@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ac291e63-b8e7-4c57-88a2-8b85f26a469e",
+  "id": "dc493741-80ae-40d8-acb6-79b5d5c0117e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "customer_message": {
@@ -53,7 +53,7 @@
           "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -147,6 +147,13 @@
             "as": "(discount_type * discount_value)",
             "type": "stored"
           }
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
@@ -1070,25 +1077,11 @@
     "role_privilege": {
       "name": "role_privilege",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
         "user_role_id": {
           "name": "user_role_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "user_api_key_id": {
-          "name": "user_api_key_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "privilege": {
@@ -1113,22 +1106,17 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
-        },
-        "role_privilege_user_api_key_id_user_api_key_id_fk": {
-          "name": "role_privilege_user_api_key_id_user_api_key_id_fk",
-          "tableFrom": "role_privilege",
-          "tableTo": "user_api_key",
-          "columnsFrom": [
-            "user_api_key_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "role_privilege_privilege_user_role_id_pk": {
+          "columns": [
+            "privilege",
+            "user_role_id"
+          ],
+          "name": "role_privilege_privilege_user_role_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -1174,7 +1162,7 @@
           "name": "is_email_verified",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": false
         },
@@ -1211,82 +1199,6 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "user_api_key": {
-      "name": "user_api_key",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "api_key_hash": {
-          "name": "api_key_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "usage_counter": {
-          "name": "usage_counter",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        }
-      },
-      "indexes": {
-        "user_api_key_api_key_hash_unique": {
-          "name": "user_api_key_api_key_hash_unique",
-          "columns": [
-            "api_key_hash"
-          ],
-          "isUnique": true
-        },
-        "user_api_key_user_id_name_unique": {
-          "name": "user_api_key_user_id_name_unique",
-          "columns": [
-            "user_id",
-            "name"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "user_api_key_user_id_user_id_fk": {
-          "name": "user_api_key_user_id_user_id_fk",
-          "tableFrom": "user_api_key",
-          "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
