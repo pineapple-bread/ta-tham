@@ -5,11 +5,10 @@ import {
   integer,
   primaryKey,
   AnySQLiteColumn,
-  unique,
 } from "drizzle-orm/sqlite-core";
 
 // user
-export const user = sqliteTable("user", {
+export const userTable = sqliteTable("user", {
   id: text().primaryKey(),
   email: text().notNull().unique(),
   username: text().notNull().unique(),
@@ -20,27 +19,29 @@ export const user = sqliteTable("user", {
   password_hash: text().notNull(),
 });
 
-export const userRelation = relations(user, ({ many }) => ({
-  userOnUserRole: many(userOnUserRole),
+// Checked
+export const userRelation = relations(userTable, ({ many }) => ({
+  userOnUserRole: many(userOnUserRoleTable),
 }));
 
 // One user can have many roles and one roles can be assigned to multiple users
-export const userRole = sqliteTable("user_role", {
+export const userRoleTable = sqliteTable("user_role", {
   id: text().primaryKey(),
   name: text().notNull().unique(),
 });
 
-export const userRoleRelation = relations(userRole, ({ many }) => ({
-  userOnUserRole: many(userOnUserRole),
-  rolePrivilege: many(rolePrivilege),
+// Checked
+export const userRoleRelation = relations(userRoleTable, ({ many }) => ({
+  userOnUserRole: many(userOnUserRoleTable),
+  rolePrivilege: many(rolePrivilegeTable),
 }));
 
-export const rolePrivilege = sqliteTable(
+export const rolePrivilegeTable = sqliteTable(
   "role_privilege",
   {
     user_role_id: text()
       .notNull()
-      .references(() => userRole.id, {
+      .references(() => userRoleTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -74,25 +75,29 @@ export const rolePrivilege = sqliteTable(
   },
 );
 
-export const rolePrivilegeRelation = relations(rolePrivilege, ({ one }) => ({
-  userRole: one(userRole, {
-    fields: [rolePrivilege.user_role_id],
-    references: [userRole.id],
+// Checked
+export const rolePrivilegeRelation = relations(
+  rolePrivilegeTable,
+  ({ one }) => ({
+    userRole: one(userRoleTable, {
+      fields: [rolePrivilegeTable.user_role_id],
+      references: [userRoleTable.id],
+    }),
   }),
-}));
+);
 
-export const userOnUserRole = sqliteTable(
+export const userOnUserRoleTable = sqliteTable(
   "user_on_user_role",
   {
     user_id: text()
       .notNull()
-      .references(() => user.id, {
+      .references(() => userTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     user_role_id: text()
       .notNull()
-      .references(() => userRole.id, {
+      .references(() => userRoleTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -104,19 +109,23 @@ export const userOnUserRole = sqliteTable(
   },
 );
 
-export const userOnUserRoleRelation = relations(userOnUserRole, ({ one }) => ({
-  user: one(user, {
-    fields: [userOnUserRole.user_id],
-    references: [user.id],
+// Checked
+export const userOnUserRoleRelation = relations(
+  userOnUserRoleTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [userOnUserRoleTable.user_id],
+      references: [userTable.id],
+    }),
+    userRole: one(userRoleTable, {
+      fields: [userOnUserRoleTable.user_role_id],
+      references: [userRoleTable.id],
+    }),
   }),
-  userRole: one(userRole, {
-    fields: [userOnUserRole.user_role_id],
-    references: [userRole.id],
-  }),
-}));
+);
 
 // customer message
-export const customerMessage = sqliteTable("customer_message", {
+export const customerMessageTable = sqliteTable("customer_message", {
   id: text().primaryKey(),
   type: text({ enum: ["question", "support", "feedback", "other"] }).notNull(),
   first_name: text().notNull(),
@@ -127,53 +136,60 @@ export const customerMessage = sqliteTable("customer_message", {
 });
 
 // language has to be unique
-export const language = sqliteTable("language", {
+export const languageTable = sqliteTable("language", {
   id: text().primaryKey(),
   name: text({ enum: ["en-US", "vi-VN"] })
     .notNull()
     .unique(),
 });
 
-export const languageRelation = relations(language, ({ many }) => ({
-  productTranslation: many(productTranslation),
-  productCategoryTranslation: many(productCategoryTranslation),
+// Checked
+export const languageRelation = relations(languageTable, ({ many }) => ({
+  productTranslation: many(productTranslationTable),
+  productCategoryTranslation: many(productCategoryTranslationTable),
   productCategorySpecificationItemTranslation: many(
-    productCategorySpecificationItemTranslation,
+    productCategorySpecificationItemTranslationTable,
   ),
   productSpecificationItemTranslation: many(
-    productSpecificationItemTranslation,
+    productSpecificationItemTranslationTable,
   ),
 }));
 
 // product
 // time is in UTC
-export const product = sqliteTable("product", {
+export const productTable = sqliteTable("product", {
   id: text().primaryKey(),
   code: text().notNull(),
   price: integer(),
   status: text({ enum: ["draft", "published", "discontinued"] })
     .notNull()
     .default("draft"),
-  product_category_id: text().references(() => productCategory.id),
+  product_category_id: text().references(() => productCategoryTable.id),
   created_at: integer({ mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
 });
 
-export const productRelation = relations(product, ({ one, many }) => ({
-  productStock: many(productStock),
-  productTranslation: many(productTranslation),
-  productImage: many(productImage),
-  productCategory: one(productCategory, {
-    fields: [product.product_category_id],
-    references: [productCategory.id],
+// Checked
+export const productRelation = relations(productTable, ({ one, many }) => ({
+  productStock: one(productStockTable),
+  productTranslation: many(productTranslationTable),
+  productImage: many(productImageTable),
+  productSpecificationItem: many(productSpecificationItemTable),
+  productCategory: one(productCategoryTable, {
+    fields: [productTable.product_category_id],
+    references: [productCategoryTable.id],
   }),
+  orderProductItem: many(orderProductItemTable),
 }));
 
 // Deleting productStock upon deleting product
-export const productStock = sqliteTable("product_stock", {
+export const productStockTable = sqliteTable("product_stock", {
   product_id: text()
-    .references(() => product.id, { onDelete: "cascade", onUpdate: "cascade" })
+    .references(() => productTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    })
     .primaryKey(),
   import_quantity: integer().notNull().default(0),
   export_quantity: integer().notNull().default(0),
@@ -183,26 +199,27 @@ export const productStock = sqliteTable("product_stock", {
   ),
 });
 
-export const productStockRelation = relations(productStock, ({ one }) => ({
-  product: one(product, {
-    fields: [productStock.product_id],
-    references: [product.id],
+// Checked
+export const productStockRelation = relations(productStockTable, ({ one }) => ({
+  product: one(productTable, {
+    fields: [productStockTable.product_id],
+    references: [productTable.id],
   }),
 }));
 
 // weak entity - product, language
-export const productTranslation = sqliteTable(
+export const productTranslationTable = sqliteTable(
   "product_translation",
   {
     product_id: text()
       .notNull()
-      .references(() => product.id, {
+      .references(() => productTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     language_id: text()
       .notNull()
-      .references(() => language.id, {
+      .references(() => languageTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -215,17 +232,17 @@ export const productTranslation = sqliteTable(
     };
   },
 );
-
+// Checked
 export const productTranslationRelation = relations(
-  productTranslation,
+  productTranslationTable,
   ({ one }) => ({
-    product: one(product, {
-      fields: [productTranslation.product_id],
-      references: [product.id],
+    product: one(productTable, {
+      fields: [productTranslationTable.product_id],
+      references: [productTable.id],
     }),
-    language: one(language, {
-      fields: [productTranslation.language_id],
-      references: [language.id],
+    language: one(languageTable, {
+      fields: [productTranslationTable.language_id],
+      references: [languageTable.id],
     }),
   }),
 );
@@ -233,57 +250,63 @@ export const productTranslationRelation = relations(
 // weak entity - product
 // display first image on display_order
 // Need id for easier fix
-export const productImage = sqliteTable("product_image", {
+export const productImageTable = sqliteTable("product_image", {
   id: text().primaryKey(),
   product_id: text()
     .notNull()
-    .references(() => product.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    .references(() => productTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   image_url: text().notNull(),
   display_order: integer(),
 });
 
-export const productImageRelation = relations(productImage, ({ one }) => ({
-  product: one(product, {
-    fields: [productImage.product_id],
-    references: [product.id],
+// Checked
+export const productImageRelation = relations(productImageTable, ({ one }) => ({
+  product: one(productTable, {
+    fields: [productImageTable.product_id],
+    references: [productTable.id],
   }),
 }));
 
 // product category
 // need to be null for the first one -> only use with for max depth <= 3
 // if product_category_id == NULL -> it's the first item. Next item can't be liek that
-export const productCategory = sqliteTable("product_category", {
+export const productCategoryTable = sqliteTable("product_category", {
   id: text().primaryKey(),
   display_order: integer(),
-  product_category_id: text().references(
-    (): AnySQLiteColumn => productCategory.id,
-  ),
+  parent_id: text().references((): AnySQLiteColumn => productCategoryTable.id),
 });
 
+// Checked
 export const productCategoryRelation = relations(
-  productCategory,
+  productCategoryTable,
   ({ one, many }) => ({
-    productCategory: one(productCategory, {
-      fields: [productCategory.product_category_id],
-      references: [productCategory.id],
+    productCategory: one(productCategoryTable, {
+      fields: [productCategoryTable.parent_id],
+      references: [productCategoryTable.id],
     }),
-    product: many(product),
-    productCategoryTranslation: many(productCategoryTranslation),
+    product: many(productTable),
+    productCategorySpecificationItem: many(
+      productCategorySpecificationItemTable,
+    ),
+    productCategoryTranslation: many(productCategoryTranslationTable),
   }),
 );
 
-export const productCategoryTranslation = sqliteTable(
+export const productCategoryTranslationTable = sqliteTable(
   "product_category_translation",
   {
     product_category_id: text()
       .notNull()
-      .references(() => productCategory.id, {
+      .references(() => productCategoryTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     language_id: text()
       .notNull()
-      .references(() => language.id, {
+      .references(() => languageTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -299,28 +322,29 @@ export const productCategoryTranslation = sqliteTable(
   },
 );
 
+// Checked
 export const productCategoryTranslationRelation = relations(
-  productCategoryTranslation,
+  productCategoryTranslationTable,
   ({ one }) => ({
-    productCategory: one(productCategory, {
-      fields: [productCategoryTranslation.product_category_id],
-      references: [productCategory.id],
+    productCategory: one(productCategoryTable, {
+      fields: [productCategoryTranslationTable.product_category_id],
+      references: [productCategoryTable.id],
     }),
-    language: one(language, {
-      fields: [productCategoryTranslation.language_id],
-      references: [language.id],
+    language: one(languageTable, {
+      fields: [productCategoryTranslationTable.language_id],
+      references: [languageTable.id],
     }),
   }),
 );
 
 // Becareful -> it has to be no child in order to be set the product_category
-export const productCategorySpecificationItem = sqliteTable(
+export const productCategorySpecificationItemTable = sqliteTable(
   "product_category_specification_item",
   {
     id: text().primaryKey(),
     product_category_id: text()
       .notNull()
-      .references(() => productCategory.id, {
+      .references(() => productCategoryTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -328,32 +352,33 @@ export const productCategorySpecificationItem = sqliteTable(
   },
 );
 
+// Checked
 export const productCategorySpecificationItemRelation = relations(
-  productCategorySpecificationItem,
+  productCategorySpecificationItemTable,
   ({ one, many }) => ({
-    productCategory: one(productCategory, {
-      fields: [productCategorySpecificationItem.product_category_id],
-      references: [productCategory.id],
+    productCategory: one(productCategoryTable, {
+      fields: [productCategorySpecificationItemTable.product_category_id],
+      references: [productCategoryTable.id],
     }),
     productCategorySpecificationItemTranslation: many(
-      productCategorySpecificationItemTranslation,
+      productCategorySpecificationItemTranslationTable,
     ),
-    productSpecificationItem: many(productSpecificationItem),
+    productSpecificationItem: many(productSpecificationItemTable),
   }),
 );
 
-export const productCategorySpecificationItemTranslation = sqliteTable(
+export const productCategorySpecificationItemTranslationTable = sqliteTable(
   "product_category_specification_item_translation",
   {
     product_category_specification_item_id: text()
       .notNull()
-      .references(() => productCategorySpecificationItem.id, {
+      .references(() => productCategorySpecificationItemTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     language_id: text()
       .notNull()
-      .references(() => language.id, {
+      .references(() => languageTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -371,71 +396,81 @@ export const productCategorySpecificationItemTranslation = sqliteTable(
   },
 );
 
+// Checked
 export const productCategorySpecificationItemTranslationRelation = relations(
-  productCategorySpecificationItemTranslation,
+  productCategorySpecificationItemTranslationTable,
   ({ one }) => ({
-    productCategorySpecificationItem: one(productCategorySpecificationItem, {
-      fields: [
-        productCategorySpecificationItemTranslation.product_category_specification_item_id,
-      ],
-      references: [productCategorySpecificationItem.id],
-    }),
-    language: one(language, {
-      fields: [productCategorySpecificationItemTranslation.language_id],
-      references: [language.id],
+    productCategorySpecificationItem: one(
+      productCategorySpecificationItemTable,
+      {
+        fields: [
+          productCategorySpecificationItemTranslationTable.product_category_specification_item_id,
+        ],
+        references: [productCategorySpecificationItemTable.id],
+      },
+    ),
+    language: one(languageTable, {
+      fields: [productCategorySpecificationItemTranslationTable.language_id],
+      references: [languageTable.id],
     }),
   }),
 );
 
 // Check if the product if it's inside the product_category
-export const productSpecificationItem = sqliteTable(
+export const productSpecificationItemTable = sqliteTable(
   "product_specification_item",
   {
     id: text().primaryKey(),
     product_id: text()
       .notNull()
-      .references(() => product.id, {
+      .references(() => productTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     product_category_specification_item_id: text()
       .notNull()
-      .references(() => productCategorySpecificationItem.id, {
+      .references(() => productCategorySpecificationItemTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
   },
 );
 
+// Checked
 export const productSpecificationItemRelation = relations(
-  productSpecificationItem,
+  productSpecificationItemTable,
   ({ one, many }) => ({
-    product: one(product, {
-      fields: [productSpecificationItem.product_id],
-      references: [product.id],
+    product: one(productTable, {
+      fields: [productSpecificationItemTable.product_id],
+      references: [productTable.id],
     }),
-    productCategorySpecificationItem: one(productCategorySpecificationItem, {
-      fields: [productSpecificationItem.product_category_specification_item_id],
-      references: [productCategorySpecificationItem.id],
-    }),
+    productCategorySpecificationItem: one(
+      productCategorySpecificationItemTable,
+      {
+        fields: [
+          productSpecificationItemTable.product_category_specification_item_id,
+        ],
+        references: [productCategorySpecificationItemTable.id],
+      },
+    ),
     productSpecificationItemTranslation: many(
-      productSpecificationItemTranslation,
+      productSpecificationItemTranslationTable,
     ),
   }),
 );
 
-export const productSpecificationItemTranslation = sqliteTable(
+export const productSpecificationItemTranslationTable = sqliteTable(
   "product_specification_item_translation",
   {
     product_specification_item_id: text()
       .notNull()
-      .references(() => productSpecificationItem.id, {
+      .references(() => productSpecificationItemTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
     language_id: text()
       .notNull()
-      .references(() => language.id, {
+      .references(() => languageTable.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -450,18 +485,19 @@ export const productSpecificationItemTranslation = sqliteTable(
   },
 );
 
+// Checked
 export const productSpecificationItemTranslationRelation = relations(
-  productSpecificationItemTranslation,
+  productSpecificationItemTranslationTable,
   ({ one }) => ({
-    productSpecificationItem: one(productSpecificationItem, {
+    productSpecificationItem: one(productSpecificationItemTable, {
       fields: [
-        productSpecificationItemTranslation.product_specification_item_id,
+        productSpecificationItemTranslationTable.product_specification_item_id,
       ],
-      references: [productSpecificationItem.id],
+      references: [productSpecificationItemTable.id],
     }),
-    language: one(language, {
-      fields: [productSpecificationItemTranslation.language_id],
-      references: [language.id],
+    language: one(languageTable, {
+      fields: [productSpecificationItemTranslationTable.language_id],
+      references: [languageTable.id],
     }),
   }),
 );
@@ -469,7 +505,7 @@ export const productSpecificationItemTranslationRelation = relations(
 // Delete
 
 // creating view to see grand_total
-export const order = sqliteTable("order", {
+export const orderTable = sqliteTable("order", {
   id: text().primaryKey(),
   status: text({
     enum: [
@@ -500,21 +536,25 @@ export const order = sqliteTable("order", {
     .$onUpdate(() => sql`(unixepoch())`),
 });
 
-export const orderRelation = relations(order, ({ one, many }) => ({
-  orderProductItem: many(orderProductItem),
-  orderBillingInformation: one(orderShippingInformation),
-  orderShippingInformation: one(orderShippingInformation),
+// Checked
+export const orderRelation = relations(orderTable, ({ one, many }) => ({
+  orderProductItem: many(orderProductItemTable),
+  orderBillingInformation: one(orderBillingInformationTable),
+  orderShippingInformation: one(orderShippingInformationTable),
 }));
 
 // only delete on order_id change. product_id can not be null but don't get delete on product delete
-export const orderProductItem = sqliteTable("order_product_item", {
+export const orderProductItemTable = sqliteTable("order_product_item", {
   id: text().primaryKey(),
   order_id: text()
     .notNull()
-    .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    .references(() => orderTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   product_id: text()
     .notNull()
-    .references(() => product.id),
+    .references(() => productTable.id),
   product_price: integer().notNull(),
   quantity: integer().notNull(),
   subtotal: integer().generatedAlwaysAs(sql`product_price * quantity`, {
@@ -522,25 +562,29 @@ export const orderProductItem = sqliteTable("order_product_item", {
   }),
 });
 
+// Checked
 export const orderProductItemRelation = relations(
-  orderProductItem,
+  orderProductItemTable,
   ({ one }) => ({
-    order: one(order, {
-      fields: [orderProductItem.order_id],
-      references: [order.id],
+    order: one(orderTable, {
+      fields: [orderProductItemTable.order_id],
+      references: [orderTable.id],
     }),
-    product: one(product, {
-      fields: [orderProductItem.product_id],
-      references: [product.id],
+    product: one(productTable, {
+      fields: [orderProductItemTable.product_id],
+      references: [productTable.id],
     }),
   }),
 );
 
-export const orderBillingInformation = sqliteTable(
+export const orderBillingInformationTable = sqliteTable(
   "order_billing_information",
   {
     order_id: text()
-      .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" })
+      .references(() => orderTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      })
       .primaryKey(),
     first_name: text().notNull(),
     last_name: text().notNull(),
@@ -556,21 +600,25 @@ export const orderBillingInformation = sqliteTable(
   },
 );
 
+// Checked
 export const orderBillingInformationRelation = relations(
-  orderBillingInformation,
+  orderBillingInformationTable,
   ({ one }) => ({
-    order: one(order, {
-      fields: [orderBillingInformation.order_id],
-      references: [order.id],
+    order: one(orderTable, {
+      fields: [orderBillingInformationTable.order_id],
+      references: [orderTable.id],
     }),
   }),
 );
 
-export const orderShippingInformation = sqliteTable(
+export const orderShippingInformationTable = sqliteTable(
   "order_shipping_information",
   {
     order_id: text()
-      .references(() => order.id, { onDelete: "cascade", onUpdate: "cascade" })
+      .references(() => orderTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      })
       .primaryKey(),
     first_name: text().notNull(),
     last_name: text().notNull(),
@@ -585,12 +633,13 @@ export const orderShippingInformation = sqliteTable(
   },
 );
 
+// Checked
 export const orderShippingInformationRelation = relations(
-  orderShippingInformation,
+  orderShippingInformationTable,
   ({ one }) => ({
-    order: one(order, {
-      fields: [orderShippingInformation.order_id],
-      references: [order.id],
+    order: one(orderTable, {
+      fields: [orderShippingInformationTable.order_id],
+      references: [orderTable.id],
     }),
   }),
 );

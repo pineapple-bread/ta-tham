@@ -14,18 +14,6 @@ CREATE TABLE `language` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `language_name_unique` ON `language` (`name`);--> statement-breakpoint
-CREATE TABLE `order` (
-	`id` text PRIMARY KEY NOT NULL,
-	`status` text DEFAULT 'pending' NOT NULL,
-	`is_stock_subtracted` integer DEFAULT false NOT NULL,
-	`discount_type` text DEFAULT 'percentage',
-	`discount_value` integer DEFAULT 0,
-	`total_discount` integer GENERATED ALWAYS AS (discount_type * discount_value) STORED,
-	`note` text,
-	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `order_billing_information` (
 	`order_id` text PRIMARY KEY NOT NULL,
 	`first_name` text NOT NULL,
@@ -68,21 +56,16 @@ CREATE TABLE `order_shipping_information` (
 	FOREIGN KEY (`order_id`) REFERENCES `order`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `product` (
+CREATE TABLE `order` (
 	`id` text PRIMARY KEY NOT NULL,
-	`code` text NOT NULL,
-	`price` integer,
-	`status` text DEFAULT 'draft' NOT NULL,
-	`product_category_id` text,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`is_stock_subtracted` integer DEFAULT false NOT NULL,
+	`discount_type` text DEFAULT 'percentage',
+	`discount_value` integer DEFAULT 0,
+	`total_discount` integer GENERATED ALWAYS AS (discount_type * discount_value) STORED,
+	`note` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`product_category_id`) REFERENCES `product_category`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE TABLE `product_category` (
-	`id` text PRIMARY KEY NOT NULL,
-	`display_order` integer,
-	`product_category_id` text,
-	FOREIGN KEY (`product_category_id`) REFERENCES `product_category`(`id`) ON UPDATE no action ON DELETE no action
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `product_category_specification_item` (
@@ -99,6 +82,13 @@ CREATE TABLE `product_category_specification_item_translation` (
 	PRIMARY KEY(`product_category_specification_item_id`, `language_id`),
 	FOREIGN KEY (`product_category_specification_item_id`) REFERENCES `product_category_specification_item`(`id`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`language_id`) REFERENCES `language`(`id`) ON UPDATE cascade ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `product_category` (
+	`id` text PRIMARY KEY NOT NULL,
+	`display_order` integer,
+	`parent_id` text,
+	FOREIGN KEY (`parent_id`) REFERENCES `product_category`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `product_category_translation` (
@@ -144,6 +134,16 @@ CREATE TABLE `product_stock` (
 	FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `product` (
+	`id` text PRIMARY KEY NOT NULL,
+	`code` text NOT NULL,
+	`price` integer,
+	`status` text DEFAULT 'draft' NOT NULL,
+	`product_category_id` text,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`product_category_id`) REFERENCES `product_category`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `product_translation` (
 	`product_id` text NOT NULL,
 	`language_id` text NOT NULL,
@@ -161,19 +161,6 @@ CREATE TABLE `role_privilege` (
 	FOREIGN KEY (`user_role_id`) REFERENCES `user_role`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `user` (
-	`id` text PRIMARY KEY NOT NULL,
-	`email` text NOT NULL,
-	`username` text NOT NULL,
-	`first_name` text NOT NULL,
-	`last_name` text NOT NULL,
-	`is_email_verified` integer DEFAULT false NOT NULL,
-	`password_retry_counter` integer DEFAULT 0 NOT NULL,
-	`password_hash` text NOT NULL
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
-CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
 CREATE TABLE `user_on_user_role` (
 	`user_id` text NOT NULL,
 	`user_role_id` text NOT NULL,
@@ -187,4 +174,17 @@ CREATE TABLE `user_role` (
 	`name` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `user_role_name_unique` ON `user_role` (`name`);
+CREATE UNIQUE INDEX `user_role_name_unique` ON `user_role` (`name`);--> statement-breakpoint
+CREATE TABLE `user` (
+	`id` text PRIMARY KEY NOT NULL,
+	`email` text NOT NULL,
+	`username` text NOT NULL,
+	`first_name` text NOT NULL,
+	`last_name` text NOT NULL,
+	`is_email_verified` integer DEFAULT false NOT NULL,
+	`password_retry_counter` integer DEFAULT 0 NOT NULL,
+	`password_hash` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
+CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);

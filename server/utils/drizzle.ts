@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/d1";
-export { sql, eq, and, or } from "drizzle-orm";
+export { sql, eq, and, or, ne, notInArray, inArray } from "drizzle-orm";
 
 import * as schema from "../database/schema";
 
@@ -7,80 +7,86 @@ export function useDrizzle() {
   return drizzle(hubDatabase(), { schema });
 }
 
-export type SelectUser = typeof schema.user.$inferSelect;
-export type InsertUser = typeof schema.user.$inferInsert;
+export type SelectUser = typeof schema.userTable.$inferSelect;
+export type InsertUser = typeof schema.userTable.$inferInsert;
 
-export type SelectUserRole = typeof schema.userRole.$inferSelect;
-export type InsertUserRole = typeof schema.userRole.$inferInsert;
+export type SelectUserRole = typeof schema.userRoleTable.$inferSelect;
+export type InsertUserRole = typeof schema.userRoleTable.$inferInsert;
 
-export type SelectRolePrivilege = typeof schema.rolePrivilege.$inferSelect;
-export type InsertRolePrivilege = typeof schema.rolePrivilege.$inferInsert;
+export type SelectRolePrivilege = typeof schema.rolePrivilegeTable.$inferSelect;
+export type InsertRolePrivilege = typeof schema.rolePrivilegeTable.$inferInsert;
 
-export type SelectUserOnUserRole = typeof schema.userOnUserRole.$inferSelect;
-export type InsertUserOnUserRole = typeof schema.userOnUserRole.$inferInsert;
+export type SelectUserOnUserRole =
+  typeof schema.userOnUserRoleTable.$inferSelect;
+export type InsertUserOnUserRole =
+  typeof schema.userOnUserRoleTable.$inferInsert;
 
-export type SelectCustomerMessage = typeof schema.customerMessage.$inferSelect;
-export type InsertCustomerMessage = typeof schema.customerMessage.$inferInsert;
+export type SelectCustomerMessage =
+  typeof schema.customerMessageTable.$inferSelect;
+export type InsertCustomerMessage =
+  typeof schema.customerMessageTable.$inferInsert;
 
-export type SelectLanguage = typeof schema.language.$inferSelect;
-export type InsertLanguage = typeof schema.language.$inferInsert;
+export type SelectLanguage = typeof schema.languageTable.$inferSelect;
+export type InsertLanguage = typeof schema.languageTable.$inferInsert;
 
-export type SelectProduct = typeof schema.product.$inferSelect;
-export type InsertProduct = typeof schema.product.$inferInsert;
+export type SelectProduct = typeof schema.productTable.$inferSelect;
+export type InsertProduct = typeof schema.productTable.$inferInsert;
 
-export type SelectProductStock = typeof schema.productStock.$inferSelect;
-export type InsertProductStock = typeof schema.productStock.$inferInsert;
+export type SelectProductStock = typeof schema.productStockTable.$inferSelect;
+export type InsertProductStock = typeof schema.productStockTable.$inferInsert;
 
 export type SelectProductTranslation =
-  typeof schema.productTranslation.$inferSelect;
+  typeof schema.productTranslationTable.$inferSelect;
 export type InsertProductTranslation =
-  typeof schema.productTranslation.$inferInsert;
+  typeof schema.productTranslationTable.$inferInsert;
 
-export type SelectProductImage = typeof schema.productImage.$inferSelect;
-export type InsertProductImage = typeof schema.productImage.$inferInsert;
+export type SelectProductImage = typeof schema.productImageTable.$inferSelect;
+export type InsertProductImage = typeof schema.productImageTable.$inferInsert;
 
-export type SelectProductCategory = typeof schema.productCategory.$inferSelect;
-export type InsertProductCategory = typeof schema.productCategory.$inferInsert;
+export type SelectProductCategory =
+  typeof schema.productCategoryTable.$inferSelect;
+export type InsertProductCategory =
+  typeof schema.productCategoryTable.$inferInsert;
 
 export type SelectProductCategoryTranslation =
-  typeof schema.productCategoryTranslation.$inferSelect;
+  typeof schema.productCategoryTranslationTable.$inferSelect;
 export type InsertProductCategoryTranslation =
-  typeof schema.productCategoryTranslation.$inferInsert;
+  typeof schema.productCategoryTranslationTable.$inferInsert;
 
 export type SelectProductCategorySpecificationItem =
-  typeof schema.productCategorySpecificationItem.$inferSelect;
+  typeof schema.productCategorySpecificationItemTable.$inferSelect;
 export type InsertProductCategorySpecificationItem =
-  typeof schema.productCategorySpecificationItem.$inferInsert;
+  typeof schema.productCategorySpecificationItemTable.$inferInsert;
 
 export type SelectProductCategorySpecificationItemTranslation =
-  typeof schema.productCategorySpecificationItemTranslation.$inferSelect;
+  typeof schema.productCategorySpecificationItemTranslationTable.$inferSelect;
 export type InsertProductCategorySpecificationItemTranslation =
-  typeof schema.productCategorySpecificationItemTranslation.$inferInsert;
+  typeof schema.productCategorySpecificationItemTranslationTable.$inferInsert;
 
 export type SelectProductSpecificationItem =
-  typeof schema.productSpecificationItem.$inferSelect;
+  typeof schema.productSpecificationItemTable.$inferSelect;
 export type InsertProductSpecificationItem =
-  typeof schema.productSpecificationItem.$inferInsert;
+  typeof schema.productSpecificationItemTable.$inferInsert;
 
 export type SelectProductSpecificationItemTranslation =
-  typeof schema.productSpecificationItemTranslation.$inferSelect;
+  typeof schema.productSpecificationItemTranslationTable.$inferSelect;
 export type InsertProductSpecificationItemTranslation =
-  typeof schema.productSpecificationItemTranslation.$inferInsert;
+  typeof schema.productSpecificationItemTranslationTable.$inferInsert;
 
-export type SelectOrder = typeof schema.order.$inferSelect;
-export type InsertOrder = typeof schema.order.$inferInsert;
+export type SelectOrder = typeof schema.orderTable.$inferSelect;
+export type InsertOrder = typeof schema.orderTable.$inferInsert;
 
 export type SelectOrderProductItem =
-  typeof schema.orderProductItem.$inferSelect;
+  typeof schema.orderProductItemTable.$inferSelect;
 export type InsertOrderProductItem =
-  typeof schema.orderProductItem.$inferInsert;
+  typeof schema.orderProductItemTable.$inferInsert;
 
 export type SelectOrderBillingInformation =
-  typeof schema.orderBillingInformation.$inferSelect;
+  typeof schema.orderBillingInformationTable.$inferSelect;
 export type InsertOrderBillingInformation =
-  typeof schema.orderBillingInformation.$inferInsert;
+  typeof schema.orderBillingInformationTable.$inferInsert;
 
 export type SelectOrderShippingInformation =
-  typeof schema.orderShippingInformation.$inferSelect;
+  typeof schema.orderShippingInformationTable.$inferSelect;
 export type InsertOrderShippingInformation =
-  typeof schema.orderShippingInformation.$inferInsert;
+  typeof schema.orderShippingInformationTable.$inferInsert;
